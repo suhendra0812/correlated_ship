@@ -16,19 +16,21 @@ import pyproj
 from zipfile import ZipFile
 from  tkinter import Tk, filedialog
 
+base_path = "D:\\BARATA"
+
 #input directory path
 Tk().withdraw()
-data_folder = filedialog.askdirectory(initialdir=r"D:\BARATA\2.seonse_outputs",title='Pick a directory')
-#data_folder = filedialog.askdirectory(initialdir=r"D:\BARATA\2.seonse_outputs",title='Pick a directory')[:-4] + "*"
+#data_folder = filedialog.askdirectory(initialdir=f'{base_path}\\2.seonse_outputs',title='Pick a directory')
+data_folder = filedialog.askdirectory(initialdir=f'{base_path}\\2.seonse_outputs',title='Pick a directory')[:-4] + "*"
 
 data_list = glob.glob(data_folder)
 
 data_date = os.path.basename(data_list[-1])[-15:-7]
 
-aiszip_path = glob.glob(r"D:\BARATA\6.ais" + "\\" + "*" + "\\" + "*" + data_date + "*" "*.zip")[0]
-ais_path = os.path.dirname(aiszip_path) + "\\" + "indo_" + os.path.basename(aiszip_path)[6:14] + "_ais.csv"
-vms_path = glob.glob(r"D:\BARATA\4.vms" + "\\" + "*" + "\\" + "*" + data_date + "*" + "*csv")[0]
-vms_info_path = glob.glob(r"D:\BARATA\4.vms\vms_info_fix.csv")[0]
+aiszip_path = glob.glob(f'{base_path}\\10.ais\\*\\*{data_date}*.zip')[0]
+ais_path = f'{os.path.dirname(aiszip_path)}\\indo_{os.path.basename(aiszip_path)[6:14]}_ais.csv'
+vms_path = glob.glob(f'{base_path}\\9.vms\\*\\*{data_date}*csv')[0]
+vms_info_path = glob.glob(f'{base_path}\\9.vms\\vms_info_fix.csv')[0]
 
 boundary_threshold = 0.5 #km
 distance_threshold = 0.5 #km
@@ -136,7 +138,7 @@ def vms_gt(beacon):
 for data_path in data_list:
     print ('-------------------------')
     print (os.path.basename(data_path))
-    ship_list = glob.glob(data_path + "//" + "*SHIP.shp")
+    ship_list = glob.glob(f'{data_path}\\*SHIP.shp')
     if len(ship_list) > 0:
         ship_path = ship_list[0]
         
@@ -282,9 +284,10 @@ for data_path in data_list:
                 
             export = input('Eksport atau tidak (y/n): ')
             if export == 'y':
-                output_path = os.path.dirname(ship_path).replace("2.seonse_outputs","13.correlated_ship") + "\\" + "interpolated" + "\\" + os.path.basename(ship_path)[:-4] + "_CORRELATED.shp"
-                ais_output_path = os.path.dirname(output_path) + "\\" + os.path.basename(os.path.dirname(ship_path)) + "_ais.csv"
-                vms_output_path = os.path.dirname(output_path) + "\\" + os.path.basename(os.path.dirname(ship_path)) + "_vms.csv"
+                correlated_basepath = os.path.dirname(ship_path).replace("2.seonse_outputs","13.correlated_ship")
+                output_path = f'{correlated_basepath}\\interpolated\\{os.path.basename(ship_path)[:-4]}_CORRELATED.shp'
+                ais_output_path = f'{os.path.dirname(output_path)}\\{os.path.basename(os.path.dirname(ship_path))}ais.csv'
+                vms_output_path = f'{os.path.dirname(output_path)}\\{os.path.basename(os.path.dirname(ship_path))}_vms.csv'
                 
                 if not os.path.exists(os.path.dirname(output_path)):
                     os.makedirs(os.path.dirname(output_path))
