@@ -226,7 +226,7 @@ for data_path in data_list:
             if export == 'y':
                 correlated_basepath = os.path.dirname(ship_path).replace("2.seonse_outputs","12.correlated_ship")
                 output_path = f'{correlated_basepath}\\{os.path.basename(ship_path)[:-4]}_CORRELATED.shp'
-                ais_output_path = f'{os.path.dirname(output_path)}\\{os.path.basename(os.path.dirname(ship_path))}ais.csv'
+                ais_output_path = f'{os.path.dirname(output_path)}\\{os.path.basename(os.path.dirname(ship_path))}_ais.csv'
                 vms_output_path = f'{os.path.dirname(output_path)}\\{os.path.basename(os.path.dirname(ship_path))}_vms.csv'
 
                 if not os.path.exists(os.path.dirname(output_path)):
