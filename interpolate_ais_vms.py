@@ -74,8 +74,6 @@ def distance(row, geom_union, geom1_col='geometry', geom2_col='geometry'):
     
 def interpolate(gdf, lon_column, lat_column, time_column, heading_column, speed_column):
     time_list = []
-    head_list = []
-    speed_list = []
     intpol_list = []
     
     for i, row in gdf.iterrows():
@@ -100,14 +98,12 @@ def interpolate(gdf, lon_column, lat_column, time_column, heading_column, speed_
         
         next_geom = Point(next_geom_tuple)
         
-        time_list.append(str(shipdate))
-        head_list.append(row[heading_column])
-        speed_list.append(row[speed_column])
-        
+        time_list.append(str(shipdate))     
         intpol_list.append(next_geom)
     
     gdf[lon_column] = [i.x for i in intpol_list]
     gdf[lat_column] = [i.y for i in intpol_list]
+    gdf[time_column] = time_list
     gdf.geometry = intpol_list
     return gdf
 
