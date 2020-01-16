@@ -31,9 +31,10 @@ ais_path = f'{os.path.dirname(aiszip_path)}\\indo_{os.path.basename(aiszip_path)
 vms_path = glob.glob(f'{base_path}\\9.vms\\*\\*{data_date}*csv')[0]
 vms_info_path = glob.glob(f'{base_path}\\9.vms\\vms_info_fix.csv')[0]
 
-distance_threshold = 0.5 #derajat
-boundary_threshold = 0.5 #km
-length_threshold = 1 #ratio
+boundary_threshold = 0.5 #derajat
+distance_threshold = 5 #km
+length_threshold = 1 #rasio
+time_threshold = 30 #menit
 
 
 def nearest(row, geom_union, df1, df2, geom1_col='geometry', geom2_col='geometry', src_column=None):
@@ -87,10 +88,8 @@ for data_path in data_list:
 
         #mendefinisikan tanggal data
         shipdate = datetime.strptime(data_path[-15:], '%Y%m%d_%H%M%S')
-        startdate = (shipdate - timedelta(hours=1)
-                     ).strftime('%Y-%m-%dT%H:%M:%S')
-        stopdate = (shipdate + timedelta(hours=1)
-                    ).strftime('%Y-%m-%dT%H:%M:%S')
+        startdate = (shipdate - timedelta(minutes=time_threshold)).strftime('%Y-%m-%dT%H:%M:%S')
+        stopdate = (shipdate + timedelta(minutes=time_threshold)).strftime('%Y-%m-%dT%H:%M:%S')
 
         #mengekstrak data csv di dalam zip
         if not os.path.exists(ais_path):
