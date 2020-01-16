@@ -33,9 +33,10 @@ vms_path = glob.glob(f'{base_path}\\9.vms\\*\\*{data_date}*csv')[0]
 vms_info_path = glob.glob(f'{base_path}\\9.vms\\vms_info_fix.csv')[0]
 
 boundary_threshold = 0.5 #derajat
-distance_threshold = 5 #km
-length_threshold = 1 #rasio
 time_threshold = 30 #menit
+distance_threshold = 5 #km
+length_tolerance = 1 #rasio
+heading_tolerance = 0.1 #rasio
 
 
 def calculate_coordinates(departure_point, bearing, distance):
@@ -72,6 +73,17 @@ def distance(row, geom_union, geom1_col='geometry', geom2_col='geometry'):
     angle1,angle2,distance = geod.inv(nearest[0].x, nearest[0].y, nearest[1].x, nearest[1].y)
     
     return distance
+
+def islinear(angle1, angle2, rel_tol):
+	angle1_plus = angle1 + 180
+	angle1_minus = angle1 - 180
+	bool_plus = isclose(angle1_plus, angle2, rel_tol=rel_tol)
+	bool_minus = isclose(angle1_minus, angle2, rel_tol=rel_tol)
+	if bool_plus or bool_minus:
+		boolean = True
+	else:
+		boolean = False
+	return boolean
     
 def interpolate(gdf, lon_column, lat_column, time_column, heading_column, speed_column):
     time_list = []
@@ -205,6 +217,9 @@ for data_path in data_list:
                 
                 associated_gdf['NEAREST_MMSI'] = associated_gdf.apply(nearest, geom_union=ais_union, df1=associated_gdf, df2=ais_intpol_gdf, src_column='mmsi', axis=1)
                 associated_gdf['NEAREST_BEACON'] = associated_gdf.apply(nearest, geom_union=vms_union, df1=associated_gdf, df2=vms_intpol_gdf, src_column='Beacon ID', axis=1)
+
+                associated_gdf['AIS_HEADING'] = associated_gdf.apply(nearest, geom_union=ais_union, df1=associated_gdf, df2=ais_intpol_gdf, src_column='heading', axis=1)
+                associated_gdf['VMS_HEADING'] = associated_gdf.apply(nearest, geom_union=vms_union, df1=associated_gdf, df2=vms_intpol_gdf, src_column='Heading', axis=1)
                 
                 associated_gdf['AIS_LENGTH'] = associated_gdf.apply(nearest, geom_union=ais_union, df1=associated_gdf, df2=ais_intpol_gdf, src_column='length', axis=1)
                 associated_gdf['VMS_GT'] = associated_gdf.apply(nearest, geom_union=vms_union, df1=associated_gdf, df2=vms_intpol_gdf, src_column='GT', axis=1)
@@ -215,36 +230,101 @@ for data_path in data_list:
                 associated_gdf['VMS_DISTANCE'] = associated_gdf.apply(distance, geom_union=vms_union, axis=1)
                 associated_gdf['VMS_DISTANCE'] = associated_gdf['VMS_DISTANCE']/1000
                 
-                len_tol = [isclose(i,j,rel_tol=length_threshold) for i,j in zip(associated_gdf['AIS_LENGTH'], associated_gdf['LENGTH'])]
+                aislen_tol = [isclose(i,j,rel_tol=length_tolerance) for i,j in zip(associated_gdf['AIS_LENGTH'], associated_gdf['LENGTH'])]
+
+                aishead_tol = [islinear(i, j, rel_tol=heading_tolerance) for i, j in zip(associated_gdf['TARGET_DIR'], associated_gdf['AIS_HEADING'])]
+                vmshead_tol = [islinear(i, j, rel_tol=heading_tolerance) for i, j in zip(associated_gdf['TARGET_DIR'], associated_gdf['VMS_HEADING'])]
+
+                status1_list = []
+                for a, b, c in zip(aishead_tol, associated_gdf['AIS_DISTANCE'], aislen_tol):
+                    if a == False:
+                        distance_threshold = 0.5
+                    else:
+                        pass
+                    if b <= distance_threshold and c == True:
+                        status = 'AIS'
+                    else:
+                        status = None
+                    
+                    status1_list.append(status)
                 
-                associated_gdf['STATUS'] = ['AIS' if x <= distance_threshold and y is True else None for x,y in zip(associated_gdf['AIS_DISTANCE'],len_tol)]
-                associated_gdf['STATUS'] = ['VMS' if x <= distance_threshold and y == None else None if x > distance_threshold and y == None else 'AIS' for x,y in zip(associated_gdf['VMS_DISTANCE'],associated_gdf['STATUS'])]
+                status2_list = []
+                for x, y, z in zip(vmshead_tol, associated_gdf['VMS_DISTANCE'], status1_list):
+                    if x == False:
+                        distance_threshold = 0.5
+                    else:
+                        pass
+                    if y <= distance_threshold and z == None:
+                        status = 'VMS'
+                    elif y > distance_threshold and z == 'AIS' :
+                        status = 'AIS'
+                    else:
+                        status = None
+                    
+                    status2_list.append(status)
+
+                associated_gdf['STATUS'] = status2_list
+                #associated_gdf['STATUS'] = ['AIS' if x <= distance_threshold and y is True else None for x,y in zip(associated_gdf['AIS_DISTANCE'],aislen_tol)]
+                #associated_gdf['STATUS'] = ['VMS' if x <= distance_threshold and y == None else None if x > distance_threshold and y == None else 'AIS' for x,y in zip(associated_gdf['VMS_DISTANCE'],associated_gdf['STATUS'])]
             
             elif ais_filter3.empty == False and vms_filter3.empty == True:
                 ais_intpol_gdf = interpolate(ais_filter3, 'longitude', 'latitude', 'time', 'cog', 'sog')
                 ais_union = ais_intpol_gdf.unary_union
                 
                 associated_gdf['NEAREST_MMSI'] = associated_gdf.apply(nearest, geom_union=ais_union, df1=associated_gdf, df2=ais_intpol_gdf, src_column='mmsi', axis=1)
+                associated_gdf['AIS_HEADING'] = associated_gdf.apply(nearest, geom_union=ais_union, df1=associated_gdf, df2=ais_intpol_gdf, src_column='heading', axis=1)
                 associated_gdf['AIS_LENGTH'] = associated_gdf.apply(nearest, geom_union=ais_union, df1=associated_gdf, df2=ais_intpol_gdf, src_column='length', axis=1)
                 
                 associated_gdf['AIS_DISTANCE'] = associated_gdf.apply(distance, geom_union=ais_union, axis=1)
                 associated_gdf['AIS_DISTANCE'] = associated_gdf['AIS_DISTANCE']/1000
                 
-                len_tol = [isclose(i,j,rel_tol=length_threshold) for i,j in zip(associated_gdf['AIS_LENGTH'], associated_gdf['LENGTH'])]
+                aislen_tol = [isclose(i,j,rel_tol=length_threshold) for i,j in zip(associated_gdf['AIS_LENGTH'], associated_gdf['LENGTH'])]
+                aishead_tol = [islinear(i, j, rel_tol=heading_tolerance) for i, j in zip(associated_gdf['TARGET_DIR'], associated_gdf['AIS_HEADING'])]
+
+                status1_list = []
+                for a, b, c in zip(aishead_tol, associated_gdf['AIS_DISTANCE'], aislen_tol):
+                    if a == False:
+                        distance_threshold = 0.5
+                    else:
+                        pass
+                    if b <= distance_threshold and c == True:
+                        status = 'AIS'
+                    else:
+                        status = None
+                    
+                    status1_list.append(status)
                 
-                associated_gdf['STATUS'] = ['AIS' if x <= distance_threshold and y is True else None for x,y in zip(associated_gdf['AIS_DISTANCE'],len_tol)]
+                associated_gdf['STATUS'] = status1_list
+                #associated_gdf['STATUS'] = ['AIS' if x <= distance_threshold and y is True else None for x,y in zip(associated_gdf['AIS_DISTANCE'],aislen_tol)]
             
             else:
                 vms_intpol_gdf = interpolate(vms_filter3, 'Longitude', 'Latitude', 'Location date', 'Heading', 'Speed')
                 vms_union = vms_intpol_gdf.unary_union
                 
                 associated_gdf['NEAREST_BEACON'] = associated_gdf.apply(nearest, geom_union=vms_union, df1=associated_gdf, df2=vms_intpol_gdf, src_column='Beacon ID', axis=1)
+                associated_gdf['VMS_HEADING'] = associated_gdf.apply(nearest, geom_union=vms_union, df1=associated_gdf, df2=vms_intpol_gdf, src_column='Heading', axis=1)
                 associated_gdf['VMS_GT'] = associated_gdf.apply(nearest, geom_union=vms_union, df1=associated_gdf, df2=vms_intpol_gdf, src_column='GT', axis=1)
                 
                 associated_gdf['VMS_DISTANCE'] = associated_gdf.apply(distance, geom_union=vms_union, axis=1)
                 associated_gdf['VMS_DISTANCE'] = associated_gdf['VMS_DISTANCE']/1000
+
+                vmshead_tol = [islinear(i, j, rel_tol=heading_tolerance) for i, j in zip(associated_gdf['TARGET_DIR'], associated_gdf['VMS_HEADING'])]
+
+                status1_list = []
+                for a, b in zip(vmshead_tol, associated_gdf['VMS_DISTANCE']):
+                    if a == False:
+                        distance_threshold = 0.5
+                    else:
+                        pass
+                    if b <= distance_threshold:
+                        status = 'VMS'
+                    else:
+                        status = None
+                    
+                    status1_list.append(status)
                 
-                associated_gdf['STATUS'] = ['VMS' if x <= distance_threshold else None for x in associated_gdf['VMS_DISTANCE']]
+                associated_gdf['STATUS'] = status1_list
+                #associated_gdf['STATUS'] = ['VMS' if x <= distance_threshold else None for x in associated_gdf['VMS_DISTANCE']]
 
             associated_aisgdf = associated_gdf[associated_gdf['STATUS'] == 'AIS']
             associated_vmsgdf = associated_gdf[associated_gdf['STATUS'] == 'VMS']  
@@ -270,7 +350,6 @@ for data_path in data_list:
                     associated_shipgdf.iloc[:,16:17] = associated_shipgdf.iloc[:,16:-5].astype('Int64').astype(object)
                 except:
                     pass
-
 
             if associated_ais > 0 or associated_vms > 0:
                 print(associated_aisvmsgdf)
