@@ -31,9 +31,9 @@ ais_path = f'{os.path.dirname(aiszip_path)}\\indo_{os.path.basename(aiszip_path)
 vms_path = glob.glob(f'{base_path}\\9.vms\\*\\*{data_date}*csv')[0]
 vms_info_path = glob.glob(f'{base_path}\\9.vms\\vms_info_fix.csv')[0]
 
-distance_threshold = 0.5
-boundary_threshold = 0.5
-length_threshold = 1
+distance_threshold = 0.5 #derajat
+boundary_threshold = 0.5 #km
+length_threshold = 1 #ratio
 
 
 def nearest(row, geom_union, df1, df2, geom1_col='geometry', geom2_col='geometry', src_column=None):
