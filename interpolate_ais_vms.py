@@ -264,8 +264,6 @@ for data_path in data_list:
                     status2_list.append(status)
 
                 associated_gdf['STATUS'] = status2_list
-                #associated_gdf['STATUS'] = ['AIS' if x <= distance_threshold and y is True else None for x,y in zip(associated_gdf['AIS_DISTANCE'],aislen_tol)]
-                #associated_gdf['STATUS'] = ['VMS' if x <= distance_threshold and y == None else None if x > distance_threshold and y == None else 'AIS' for x,y in zip(associated_gdf['VMS_DISTANCE'],associated_gdf['STATUS'])]
             
             elif ais_filter3.empty == False and vms_filter3.empty == True:
                 ais_intpol_gdf = interpolate(ais_filter3, 'longitude', 'latitude', 'time', 'cog', 'sog')
@@ -295,7 +293,6 @@ for data_path in data_list:
                     status1_list.append(status)
                 
                 associated_gdf['STATUS'] = status1_list
-                #associated_gdf['STATUS'] = ['AIS' if x <= distance_threshold and y is True else None for x,y in zip(associated_gdf['AIS_DISTANCE'],aislen_tol)]
             
             else:
                 vms_intpol_gdf = interpolate(vms_filter3, 'Longitude', 'Latitude', 'Location date', 'Heading', 'Speed')
@@ -324,7 +321,6 @@ for data_path in data_list:
                     status1_list.append(status)
                 
                 associated_gdf['STATUS'] = status1_list
-                #associated_gdf['STATUS'] = ['VMS' if x <= distance_threshold else None for x in associated_gdf['VMS_DISTANCE']]
 
             associated_aisgdf = associated_gdf[associated_gdf['STATUS'] == 'AIS']
             associated_vmsgdf = associated_gdf[associated_gdf['STATUS'] == 'VMS']  
