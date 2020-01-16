@@ -33,9 +33,10 @@ vms_path = glob.glob(f'{base_path}\\9.vms\\*\\*{data_date}*csv')[0]
 vms_info_path = glob.glob(f'{base_path}\\9.vms\\vms_info_fix.csv')[0]
 
 boundary_threshold = 0.5 #derajat
-distance_threshold = 0.5 #km
-length_threshold = 1 #ratio
-time_threshold = 30 #minutes
+distance_threshold = 5 #km
+length_threshold = 1 #rasio
+time_threshold = 30 #menit
+
 
 def calculate_coordinates(departure_point, bearing, distance):
     R = 63781000
